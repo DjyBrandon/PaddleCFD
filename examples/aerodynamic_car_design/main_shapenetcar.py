@@ -24,10 +24,9 @@ import numpy as np
 import paddle
 from paddle.io import DataLoader
 from tqdm import tqdm
-from ppcfd.models import Transolver as Model
+from ppcfd.models.pptransformer.Transolver import Transolver as Model
 from ppcfd.data.shapenetcar_datamodule import GraphDataset
 from ppcfd.data.shapenetcar_datamodule import load_train_val_fold
-
 
 log = logging.getLogger(__name__)
 paddle.seed(42)
@@ -227,9 +226,7 @@ def train(
         config.checkpoint = Path(config.checkpoint).with_suffix(".pdparams")
         state_dict = paddle.load(config.checkpoint.as_posix())
         model.set_state_dict(state_dict)
-        loss_press, loss_velo, p_orig, v_orig, spearmanr, loss_cd = test(
-            model, val_loader, coef_norm, enable_test=True
-        )
+        loss_press, loss_velo, p_orig, v_orig, spearmanr, loss_cd = test(model, val_loader, coef_norm, enable_test=True)
         log.info(
             f"val_loss = {(loss_press + reg*loss_velo):.4f}, Spearman's Rank Correlations = {spearmanr:.4f}, loss_velo = {v_orig.item():.4f}, loss_press = {p_orig.item():.4f}, loss_cd = {loss_cd:.4f}"
         )
