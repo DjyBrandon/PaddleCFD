@@ -1,0 +1,51 @@
+mode: train
+seed: 0
+output_dir: ${hydra:run.dir}
+device: gpu
+dtype: float32
+DATA:
+  path: ./Dataset
+  task: full
+  download: false
+  sample_points: 10000
+  batch_size: 2000
+  shuffle: true
+  boundary_line_ratio: 0.2
+model: KANONet
+MLPMODEL:
+  branch1_in: 63
+  branch1_hidden:
+  - 512
+  - 256
+  - 128
+  trunk_in: 2
+  trunk_hidden:
+  - 128
+  - 256
+  - 128
+KANMODEL:
+  width_branch1:
+  - 63
+  - 128
+  - 128
+  - 128
+  grid_range_b1:
+  - -1.0
+  - 1.0
+  grid_size_b1: 10
+  width_trunk:
+  - 2
+  - 64
+  - 128
+  - 128
+  grid_range_t:
+  - -1.5
+  - 3.0
+  grid_size_t: 10
+epochs: 500
+lr: 0.001
+save_freq: 10
+enable_ddp: false
+resume_ep: -1
+checkpoint: null
+pred_ckpt: null

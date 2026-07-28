@@ -5,9 +5,13 @@
 cd /opt/package/ppcfd/PaddleCFD
 ```
 
-## 1. Aerodynamic Car Design（汽车风阻）
+## 1. Aerodynamic Car Design
 
 > This model can predict drag of the vehicle in different geometry.
+
+![Example](./images/aerodynamic_car_design/example.png)
+
+> [1] Wu H, Luo H, Wang H, et al. Transolver: A fast transformer solver for pdes on general geometries[J]. arXiv preprint arXiv:2402.02366, 2024.
 
 ![Original Data](./images/aerodynamic_car_design/rotation_video.gif)
 
@@ -19,7 +23,6 @@ cd /opt/package/ppcfd/PaddleCFD
 |--------------|--------------------------|---------|
 | ShapeNet-Car | 12 hours                 | 6 hours |
 | DrivAerNet++ | TODO                     | TODO    |
-
 
 **Precision:**
 
@@ -96,13 +99,82 @@ If test successfully:
 
 ![Test 2](./images/aerodynamic_car_design/test_2.png)
 
-## Aerodynamics（翼型压力）
+## 2. Aerodynamic Airfoil Design
+
+
+> Given an airfoil’s:
+>
+> - Geometric parameters (e.g., coordinates, curvature),
+> - Flow conditions (e.g., angle of attack, freestream velocity),
+>
+> PP-DeepOKAN predicts the velocity and pressure distributions over the domain
+
+![Result](../examples/aerodynamics/ppkan/outputs-KANONet/2026-07-28/20-53-56/pressure_pred.png)
+
+**Configuration:** `MetaX MXC500 16G*1`.
+
+**Runtime:** $\approx$ 27 h
+
+**Pressure Field Prediction Metric on the Test Set:** 2.5064e-02
+
+**Loss Curve:**
+
+![Training Curves](../examples/aerodynamics/ppkan/outputs-KANONet/2026-07-26/22-19-54/training_curves.png)
+
+### 2.1 Data Download
+
+I downloaded the data to the data disk and linked it to the corresponding data directory.
+
+```shell
+# download data (AirfRANS)
+cd /data
+wget https://paddle-org.bj.bcebos.com/paddlecfd/datasets/ppkan/AirFoilDataset.zip
+unzip AirFoilDataset.zip
+
+# create data link
+cd examples/aerodynamics/ppkan
+ln -sf /data/Dataset /opt/package/ppcfd/PaddleCFD/examples/aerodynamics/ppkan/Dataset
+```
+
+### 2.2 Checkpoint Download (Optional)
+
+My checkpoint file is located in the `outputs-KANONet` directory. It was obtained after about 27 hours of training, or you can use the default checkpoint file provided by the official.
+
+```shell
+# default ckpt
+mkdir -p ./checkpoint && cd ./checkpoint
+wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppkan/foil/KANONet_best.pdparams
+cd ..
+```
+
+### 2.3 Train (Useless)
+
+The training instructions are as follows. But I have completed the training process. All you need to do is run the test command.
+
+```shell
+# ⚠️ You do not need to train
+python main.py model=KANONet
+```
+
+### 2.4 Test
+
+You can use either my checkpoint file or the official default checkpoint file for the test.
+
+```shell
+# my ckpt
+python main.py mode=test checkpoint=./outputs-KANONet/2026-07-26/22-19-54/KANONet_best.pdparams
+
+# OR default ckpt
+python main.py mode=test checkpoint=./checkpoint/KANONet_best.pdparams
+```
 
 If test successfully:
 
-![]()
+![Test 1](./images/aerodynamic_airfoil_design/test_1.png)
 
-## Airfoil Wake Flow（翼型尾流）
+![Test 2](./images/aerodynamic_airfoil_design/test_2.png)
+
+## Airfoil Wake Flow
 
 If test successfully:
 
