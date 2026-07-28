@@ -34,7 +34,7 @@ cd /opt/package/ppcfd/PaddleCFD
 
 **Loss Curve:**
 
-![Loss Curve](./images/aerodynamic_car_design/loss_curves.png)
+<img src="./images/aerodynamic_car_design/loss_curves.png" style="zoom:20%;" />
 
 ### 1.1 Data Download
 
@@ -98,9 +98,21 @@ If test successfully:
 
 ## Aerodynamics（翼型压力）
 
+If test successfully:
+
+![]()
+
 ## Airfoil Wake Flow（翼型尾流）
 
+If test successfully:
+
+![]()
+
 ## Darcy Flow
+
+If test successfully:
+
+![]()
 
 ```shell
 ```
