@@ -12,7 +12,7 @@ log
 *.mp3
 *.ruff_cache
 *.npz
-*.npy
+# *.npy
 results/
 NOMAD/
 # Byte-compiled / optimized / DLL files

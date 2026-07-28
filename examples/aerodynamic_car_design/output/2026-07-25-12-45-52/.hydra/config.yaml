@@ -1,0 +1,57 @@
+mode: train
+checkpoint: null
+seed: 0
+output_dir: ${hydra:run.dir}
+model:
+  _target_: ppcfd.networks.Transolver
+  space_dim: 6
+  n_layers: 5
+  n_hidden: 256
+  dropout: 0
+  n_head: 8
+  act: gelu
+  mlp_ratio: 1
+  fun_dim: 0
+  out_dim: 4
+  slice_num: 32
+  ref: 8
+  n_iter: 1
+  unified_pos: false
+  reshape: false
+model_name: Transolver
+project_name: DNNFluid-Car
+lr: 0.001
+lr_schedular: CosineAnnealingLR
+num_epochs: 200
+loss_fn: MSE
+enable_dp: false
+enable_mp: false
+enable_pp: false
+only_save_sdf: false
+lazy_loading: true
+cd_finetune: false
+car_loss: true
+val_freq: 50
+data_module:
+  _target_: ppcfd.data.PointCloudDataModule
+  data_dir: ./data/preprocessed_data
+  n_train_num: 798
+  n_val_num: 100
+  n_test_num: 100
+num_workers: 4
+batch_size: 1
+out_channels:
+- 1
+- 3
+out_keys:
+- pressure
+- wss
+input_filename: test.ply
+output_filename: test.vtk
+large_stl: false
+enable_cinn: false
+enable_profiler: false
+gpu: 0
+mass_density: 1.0
+flow_speed: 30.0
+simulation_type: AeroDynamic

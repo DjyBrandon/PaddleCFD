@@ -1,0 +1,2 @@
+- mode=test
+- checkpoint=./output/Transolver/20260725_124606/model_199.pdparams
