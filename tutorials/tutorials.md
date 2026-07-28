@@ -174,17 +174,184 @@ If test successfully:
 
 ![Test 2](./images/aerodynamic_airfoil_design/test_2.png)
 
-## Airfoil Wake Flow
+## 3. Airfoil Wake Flow
 
 If test successfully:
 
 ![]()
 
-## Darcy Flow
+## 4. Darcy Flow
 
-If test successfully:
+### 4.1 MultiONet + SOAP
 
-![]()
+**WINO vs DeepONet Architecture:**
+
+![Architecture](../examples/darcyflow/ppdeeponet/image/WINO_vs_DeepONet.png)
+
+**Result:**
+
+![Result](../examples/darcyflow/ppdeeponet/saved_models/PIMultiONetBatch_fdm_TS/result.png)
+
+**Configuration:** `MetaX MXC500 16G*1`.
+
+**Runtime:** $\approx$ 2.5 h
+
+**L2 errors of models on the Test Set:** 0.0059
+
+**Loss Curves:**
+
+![Loss Curves](../examples/darcyflow/ppdeeponet/saved_models/PIMultiONetBatch_fdm_TS/loss.png)
+
+**Error Curves:**
+
+![Error Curves](../examples/darcyflow/ppdeeponet/saved_models/PIMultiONetBatch_fdm_TS/error.png)
+
+#### 4.1.1 Data Download
+
+I downloaded the data to the data disk and linked it to the corresponding data directory.
 
 ```shell
+# download data
+cd /data
+wget -nc -P ./Problems/DarcyFlow_2d/ https://paddle-org.bj.bcebos.com/paddlecfd/datasets/ppdeeponet/darcyflow/smh_train.mat
+wget -nc -P ./Problems/DarcyFlow_2d/ https://paddle-org.bj.bcebos.com/paddlecfd/datasets/ppdeeponet/darcyflow/smh_test_in.mat
+
+# create data directory
+cd examples/darcyflow/ppdeeponet
+mkdir -p ./Problems && cd ./Problems
+
+# create data link
+ln -sf /data/DarcyFlow_2d /opt/package/ppcfd/PaddleCFD/examples/darcyflow/ppdeeponet/Problems/DarcyFlow_2d
+cd ..
 ```
+
+#### 4.1.2 Checkpoint Download (Optional)
+
+My checkpoint file is located in the `saved_models/PIMultiONetBatch_fdm_TS` directory. It was obtained after about 2.5 hours of training, or you can use the default checkpoint file provided by the official.
+
+```shell
+# default ckpt
+mkdir -p ./checkpoint/ && cd ./checkpoint
+wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppdeeponet/darcyflow/loss_pimultionet.mat
+wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppdeeponet/darcyflow/model_enc.pdparams
+wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppdeeponet/darcyflow/model_u.pdparams
+cd ..
+```
+
+#### 4.1.3 Train (Useless)
+
+The training instructions are as follows. But I have completed the training process. All you need to do is run the test command.
+
+```shell
+# ⚠️ You do not need to train
+python pimultionet.py
+```
+
+#### 4.1.4 Test
+
+You can use either my checkpoint file or the official default checkpoint file by modifying `config_smh.yaml` file for the test.
+
+```yaml
+# my ckpt
+train:
+    save_path: "saved_models/PIMultiONetBatch_fdm_TS/"
+
+# OR default ckpt
+train:
+    save_path: "checkpoint/"
+```
+
+```shell
+python pimultionet.py --mode eval
+```
+
+If test successfully:
+
+![Test_my](./images/darcyflow_pimultionet/test_my.png)
+
+![Test_default](./images/darcyflow_pimultionet/test_default.png)
+
+### 4.2 DeepOKAN
+
+**Architecture:**
+
+```mermaid
+graph TD
+    A[Input: Permeability Field] --> B(Branch KAN: b-spline/RBF/etc.)
+    D[Query Coordinates] --> E(Trunk KAN: b-spline/RBF/etc.)
+    B --> F[Latent Features]
+    E --> G[Spatial Basis]
+    F --> H{Inner Product}
+    G --> H
+    H --> I[Output: /Pressure/etc.]
+```
+
+**Result:**
+
+![Result](../examples/darcyflow/ppkan/outputs-KANONet/2026-07-29/00-05-01/sample_[18]_result.png)
+
+**Configuration:** `MetaX MXC500 16G*1`.
+
+**Runtime:** $\approx$ 2.5 min
+
+**Pressure field prediction relative error on the Test Set MSE:** 0.007108
+
+**Loss Curves:**
+
+![Loss Curves](./images/darcyflow_ppkan/loss_curves.png)
+
+#### 4.2.1 Data Download
+
+I downloaded the data to the data disk and linked it to the corresponding data directory.
+
+```shell
+# download data (PDE)
+cd /data
+wget https://paddle-org.bj.bcebos.com/paddlecfd/datasets/ppkan/piececonst_r421_N1024_smooth1.mat
+
+# create data directory
+cd examples/darcyflow/ppkan
+mkdir -p ./data && cd ./data
+
+# create data link
+ln -sf /data/piececonst_r421_N1024_smooth1.mat /opt/package/ppcfd/PaddleCFD/examples/darcyflow/ppkan/data/piececonst_r421_N1024_smooth1.mat
+cd ..
+```
+
+#### 4.2.2 Checkpoint Download (Optional)
+
+My checkpoint file is located in the `outputs-KANONet` directory. It was obtained after about 3 minutes of training, or you can use the default checkpoint file provided by the official.
+
+```shell
+# default ckpt
+mkdir -p ./checkpoint/ && cd ./checkpoint
+wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppkan/darcy/KANONet_Darcy.pdparams
+cd ..
+```
+
+#### 4.2.3 Train (Useless)
+
+The training instructions are as follows. But I have completed the training process. All you need to do is run the test command.
+
+```shell
+# ⚠️ You do not need to train
+python main.py mode=train
+```
+
+#### 4.2.4 Test
+
+You can use either my checkpoint file or the official default checkpoint file for the test.
+
+```shell
+# my ckpt
+python main.py mode=test checkpoint=outputs-KANONet/2026-07-29/00-05-01/KANONet_latest.pdparams
+
+# OR default ckpt
+python main.py mode=test checkpoint=checkpoint/KANONet_Darcy.pdparams
+```
+
+If test successfully:
+
+![Test_my](./images/darcyflow_ppkan/test_my.png)
+
+![Test_default](./images/darcyflow_ppkan/test_default.png)

@@ -1,0 +1,2 @@
+- mode=test
+- checkpoint=checkpoint/KANONet_Darcy.pdparams
