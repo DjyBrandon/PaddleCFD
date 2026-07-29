@@ -15,7 +15,6 @@ from sklearn.decomposition import TruncatedSVD
 from ppcfd.models.ppdiffusion.utils.architecture import Unet
 from ppcfd.models.ppdiffusion.utils.diffusion import ElucidatedDiffusion
 
-
 matplotlib.rcParams["figure.dpi"] = 200
 plt.rcParams["font.family"] = "serif"
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
@@ -543,7 +542,7 @@ if __name__ == "__main__":
         fig.tight_layout(rect=[0, 0, 0.9, 1])
         cbar = fig.colorbar(im, cax=cbar_ax)
         cbar.ax.tick_params(labelsize=17)
-        plt.savefig("u-contour-3models.png", dpi=600, bbox_inches="tight")
+        plt.savefig(f"images/u-contour-3models_{p}.png", dpi=600, bbox_inches="tight")
         plt.close()
 
     t_idx = 1
