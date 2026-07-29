@@ -99,7 +99,10 @@ If test successfully:
 
 ![Test 2](./images/aerodynamic_car_design/test_2.png)
 
-## 2. Aerodynamic Airfoil Design
+## 2. Aerodynamic Drag Prediction
+
+
+## 3. Aerodynamic Airfoil Design
 
 
 > Given an airfoil’s:
@@ -121,7 +124,7 @@ If test successfully:
 
 ![Training Curves](../examples/aerodynamics/ppkan/outputs-KANONet/2026-07-26/22-19-54/training_curves.png)
 
-### 2.1 Data Download
+### 3.1 Data Download
 
 I downloaded the data to the data disk and linked it to the corresponding data directory.
 
@@ -136,7 +139,7 @@ cd examples/aerodynamics/ppkan
 ln -sf /data/Dataset /opt/package/ppcfd/PaddleCFD/examples/aerodynamics/ppkan/Dataset
 ```
 
-### 2.2 Checkpoint Download (Optional)
+### 3.2 Checkpoint Download (Optional)
 
 My checkpoint file is located in the `outputs-KANONet` directory. It was obtained after about 27 hours of training, or you can use the default checkpoint file provided by the official.
 
@@ -147,7 +150,7 @@ wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppkan/foil/KANONet_b
 cd ..
 ```
 
-### 2.3 Train (Useless)
+### 3.3 Train (Useless)
 
 The training instructions are as follows. But I have completed the training process. All you need to do is run the test command.
 
@@ -156,7 +159,7 @@ The training instructions are as follows. But I have completed the training proc
 python main.py model=KANONet
 ```
 
-### 2.4 Test
+### 3.4 Test
 
 You can use either my checkpoint file or the official default checkpoint file for the test.
 
@@ -174,15 +177,144 @@ If test successfully:
 
 ![Test 2](./images/aerodynamic_airfoil_design/test_2.png)
 
-## 3. Airfoil Wake Flow
+## 4. Airfoil Wake Flow
+
+> NODM (Neural Operator + Diffusion Model) combines neural operators as efficient priors with diffusion models that enhance spectral fidelity, enabling high-quality predictions of turbulent flows such as the airfoil wake.
+
+**Architecture:**
+
+![Architecture](../examples/airfoil_wake/image/nodm.png)
+
+The NODM framework consists of two main stages:
+
+1. Neural Operator (NO) Training
+
+    - Learns the mapping between input conditions and flow field outputs.
+    - Provides a low-frequency approximation of the flow field.
+
+2. Diffusion Model (DM) Training
+
+    - Conditioned on the neural operator outputs (prior).
+    - Recovers missing high-frequency details using score-based diffusion and Langevin dynamics sampling.
+
+This hybrid approach combines the efficiency of NOs with the spectral accuracy of DMs, resulting in predictions that align more closely with the true turbulence spectra. Its structure is shown in Figure.
+
+**Result:**
+
+![Result](../examples/airfoil_wake/nodm/dm/images/u-contour-3models_0.png)
+
+**Configuration:** `MetaX MXC500 64G*1`.
+
+**Runtime:** $\approx$ 5 h + 1167 h
+
+**Renormalizing the output**
+
+- Field error: nodm = 1.3891e-02, no = 6.5307e-04
+- Spec error : nodm = 7.7562e-04, no = 4.9840e-04
+
+### 4.1 Data Download
+
+I downloaded the data to the data disk and linked it to the corresponding data directory.
+
+```shell
+# download data (AirfRANS)
+cd /data
+wget https://paddle-org.bj.bcebos.com/paddlecfd/datasets/pp-fno-diffusion/airfoilLES_grid.h5
+wget https://paddle-org.bj.bcebos.com/paddlecfd/datasets/pp-fno-diffusion/airfoilLES_snapshots_midspan.zip
+unzip airfoilLES_snapshots_midspan.zip
+
+# create data link
+cd examples/airfoil_wake
+ln -sf /data/airfoilLES_grid.h5 /opt/package/ppcfd/PaddleCFD/examples/airfoil_wake/data/airfoilLES_grid.h5
+ln -sf /data/airfoilLES_midspan /opt/package/ppcfd/PaddleCFD/examples/airfoil_wake/data
+```
+
+### 4.2 Data Preparation
+
+```shell
+# data preparation
+cd /data
+python data_prep.py
+cd ..
+```
+
+This script processes the raw dataset and generates the following preprocessed files:
+
+- `mask.npy`
+- `UX.npy`
+- `UX_nan_filtered.npy`
+- `grid.png`
+
+![Grid](../examples/airfoil_wake/data/grid.png)
+
+### 4.2 Neural Operator Checkpoint Download (Optional)
+
+My checkpoint file is located in the `nodm/models` directory. It was obtained after about 5 hours of training, or you can use the default checkpoint file provided by the official.
+
+```shell
+cd nodm
+mkdir models && cd models
+
+# default ckpt
+wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/nodm/no_model.pdparams
+```
+
+### 4.3 Prepara Data for the Diffusion Model
+
+```shell
+python no_postprocess.py
+```
+
+This script uses the trained Neural Operator to post-process the data and generate:
+
+- `TRAIN_TRUE.npy`, `TRAIN_PRED.npy`
+- `VAL_TRUE.npy`, `VAL_PRED.npy`
+- `TEST_TRUE.npy`, `TEST_PRED.npy`
+
+These files are used as input for the Diffusion Model training.
+
+### 4.4 Diffusion Model Checkpoint Download
+
+After a rough calculation, I estimate that using a single 64G GPU would require approximately 1167 hours of operation. So I must use the default checkpoint file provided by the official.
+
+```shell
+cd dm
+wget -nc -P ./models/ https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/nodm/dm_model.pdparams
+```
+
+### 4.5 Train (Useless)
+
+The training instructions are as follows.
+
+```shell
+# ⚠️ You do not need to train
+cd nodm
+python train_no.py
+python no_postprocess.py
+
+cd dm
+python train_dm.py
+python dm_postprocess.py
+```
+
+### 4.6 Post-process Results
+
+You can use official default checkpoint file for the test.
+
+```shell
+python dm_postprocess.py
+```
 
 If test successfully:
 
-![]()
+![Test 1](./images/aerodynamic_airfoil_design/test_1.png)
 
-## 4. Darcy Flow
+![Test 2](./images/aerodynamic_airfoil_design/test_2.png)
 
-### 4.1 MultiONet + SOAP
+
+## 5. Darcy Flow
+
+### 5.1 MultiONet + SOAP
 
 **WINO vs DeepONet Architecture:**
 
@@ -206,7 +338,7 @@ If test successfully:
 
 ![Error Curves](../examples/darcyflow/ppdeeponet/saved_models/PIMultiONetBatch_fdm_TS/error.png)
 
-#### 4.1.1 Data Download
+#### 5.1.1 Data Download
 
 I downloaded the data to the data disk and linked it to the corresponding data directory.
 
@@ -225,7 +357,7 @@ ln -sf /data/DarcyFlow_2d /opt/package/ppcfd/PaddleCFD/examples/darcyflow/ppdeep
 cd ..
 ```
 
-#### 4.1.2 Checkpoint Download (Optional)
+#### 5.1.2 Checkpoint Download (Optional)
 
 My checkpoint file is located in the `saved_models/PIMultiONetBatch_fdm_TS` directory. It was obtained after about 2.5 hours of training, or you can use the default checkpoint file provided by the official.
 
@@ -238,7 +370,7 @@ wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppdeeponet/darcyflow
 cd ..
 ```
 
-#### 4.1.3 Train (Useless)
+#### 5.1.3 Train (Useless)
 
 The training instructions are as follows. But I have completed the training process. All you need to do is run the test command.
 
@@ -247,7 +379,7 @@ The training instructions are as follows. But I have completed the training proc
 python pimultionet.py
 ```
 
-#### 4.1.4 Test
+#### 5.1.4 Test
 
 You can use either my checkpoint file or the official default checkpoint file by modifying `config_smh.yaml` file for the test.
 
@@ -271,7 +403,7 @@ If test successfully:
 
 ![Test_default](./images/darcyflow_pimultionet/test_default.png)
 
-### 4.2 DeepOKAN
+### 5.2 DeepOKAN
 
 **Architecture:**
 
@@ -300,7 +432,7 @@ graph TD
 
 ![Loss Curves](./images/darcyflow_ppkan/loss_curves.png)
 
-#### 4.2.1 Data Download
+#### 5.2.1 Data Download
 
 I downloaded the data to the data disk and linked it to the corresponding data directory.
 
@@ -318,7 +450,7 @@ ln -sf /data/piececonst_r421_N1024_smooth1.mat /opt/package/ppcfd/PaddleCFD/exam
 cd ..
 ```
 
-#### 4.2.2 Checkpoint Download (Optional)
+#### 5.2.2 Checkpoint Download (Optional)
 
 My checkpoint file is located in the `outputs-KANONet` directory. It was obtained after about 3 minutes of training, or you can use the default checkpoint file provided by the official.
 
@@ -329,7 +461,7 @@ wget https://paddle-org.bj.bcebos.com/paddlecfd/checkpoints/ppkan/darcy/KANONet_
 cd ..
 ```
 
-#### 4.2.3 Train (Useless)
+#### 5.2.3 Train (Useless)
 
 The training instructions are as follows. But I have completed the training process. All you need to do is run the test command.
 
@@ -338,7 +470,7 @@ The training instructions are as follows. But I have completed the training proc
 python main.py mode=train
 ```
 
-#### 4.2.4 Test
+#### 5.2.4 Test
 
 You can use either my checkpoint file or the official default checkpoint file for the test.
 
@@ -355,3 +487,9 @@ If test successfully:
 ![Test_my](./images/darcyflow_ppkan/test_my.png)
 
 ![Test_default](./images/darcyflow_ppkan/test_default.png)
+
+## 6. Flow Field Prediction
+
+If test successfully:
+
+![]()
